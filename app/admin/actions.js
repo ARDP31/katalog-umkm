@@ -135,7 +135,7 @@ export async function tambahProduk(arg1, arg2) {
   const hargaRaw = formData?.get?.("harga");
   const harga = parseInt(hargaRaw, 10);
   const kategori = String(formData?.get?.("kategori") || "").trim();
-  const foto_url = String(formData?.get?.("foto_url") || "").trim();
+  let foto_url = String(formData?.get?.("foto_url") || "").trim();
   const deskripsi = String(formData?.get?.("deskripsi") || "").trim();
 
   if (!nama) {
@@ -146,11 +146,50 @@ export async function tambahProduk(arg1, arg2) {
     return { error: "Harga harus berupa angka dan tidak boleh negatif." };
   }
 
+  if (!kategori) {
+    return { error: "Kategori wajib dipilih atau diisi." };
+  }
+
+  // Proses upload file foto jika dilampirkan
+  const fotoFile = formData?.get?.("foto_file");
+  if (fotoFile && typeof fotoFile === "object" && fotoFile.size > 0 && fotoFile.name) {
+    try {
+      const bytes = await fotoFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const ext = fotoFile.name.split(".").pop() || "jpg";
+      const cleanName = `produk-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("produk")
+        .upload(cleanName, buffer, {
+          contentType: fotoFile.type || "image/jpeg",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from("produk")
+          .getPublicUrl(cleanName);
+        if (urlData?.publicUrl) {
+          foto_url = urlData.publicUrl;
+        }
+      } else {
+        foto_url = `data:${fotoFile.type || "image/jpeg"};base64,${buffer.toString("base64")}`;
+      }
+    } catch {
+      // Fallback ke foto_url bawaan
+    }
+  }
+
+  if (!foto_url) {
+    foto_url = "/produk/kopi.svg";
+  }
+
   const { error } = await supabase.from("produk").insert({
     nama,
     harga,
     kategori,
-    foto_url: foto_url || "/produk/kopi.svg",
+    foto_url,
     deskripsi,
   });
 
@@ -198,7 +237,7 @@ export async function ubahProduk(arg1, arg2) {
   const hargaRaw = formData?.get?.("harga");
   const harga = parseInt(hargaRaw, 10);
   const kategori = String(formData?.get?.("kategori") || "").trim();
-  const foto_url = String(formData?.get?.("foto_url") || "").trim();
+  let foto_url = String(formData?.get?.("foto_url") || "").trim();
   const deskripsi = String(formData?.get?.("deskripsi") || "").trim();
 
   if (!nama) {
@@ -209,13 +248,52 @@ export async function ubahProduk(arg1, arg2) {
     return { error: "Harga harus berupa angka dan tidak boleh negatif." };
   }
 
+  if (!kategori) {
+    return { error: "Kategori wajib dipilih atau diisi." };
+  }
+
+  // Proses upload file foto jika dilampirkan
+  const fotoFile = formData?.get?.("foto_file");
+  if (fotoFile && typeof fotoFile === "object" && fotoFile.size > 0 && fotoFile.name) {
+    try {
+      const bytes = await fotoFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const ext = fotoFile.name.split(".").pop() || "jpg";
+      const cleanName = `produk-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("produk")
+        .upload(cleanName, buffer, {
+          contentType: fotoFile.type || "image/jpeg",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from("produk")
+          .getPublicUrl(cleanName);
+        if (urlData?.publicUrl) {
+          foto_url = urlData.publicUrl;
+        }
+      } else {
+        foto_url = `data:${fotoFile.type || "image/jpeg"};base64,${buffer.toString("base64")}`;
+      }
+    } catch {
+      // Pertahankan foto_url lama jika upload gagal
+    }
+  }
+
+  if (!foto_url) {
+    foto_url = "/produk/kopi.svg";
+  }
+
   const { error } = await supabase
     .from("produk")
     .update({
       nama,
       harga,
       kategori,
-      foto_url: foto_url || "/produk/kopi.svg",
+      foto_url,
       deskripsi,
     })
     .eq("id", id);
