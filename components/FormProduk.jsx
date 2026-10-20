@@ -24,6 +24,7 @@ export default function FormProduk({ produk = {}, action, labelTombol }) {
         </div>
       )}
       {produk.id && <input type="hidden" name="id" value={produk.id} />}
+      {produk.foto_url && <input type="hidden" name="foto_lama" value={produk.foto_url} />}
 
       <Input label="Nama produk" name="nama" defaultValue={produk.nama || ""} required />
 
@@ -53,8 +54,22 @@ export default function FormProduk({ produk = {}, action, labelTombol }) {
         </datalist>
       </label>
 
+      {produk.foto_url && (
+        <div className="flex items-center gap-3 rounded-xl border border-garis bg-permukaan p-3">
+          <img
+            src={produk.foto_url}
+            alt="Foto produk saat ini"
+            className="h-12 w-12 rounded-lg object-cover bg-latar"
+          />
+          <div className="text-xs text-teks-lembut">
+            <span className="font-semibold text-teks block">Foto saat ini</span>
+            Upload file baru atau masukkan link baru jika ingin mengganti gambar.
+          </div>
+        </div>
+      )}
+
       <label className="flex flex-col gap-1.5 text-sm font-semibold">
-        Upload gambar
+        Upload gambar {produk.foto_url ? "baru (opsional)" : "(opsional)"}
         <input
           type="file"
           name="foto_file"
